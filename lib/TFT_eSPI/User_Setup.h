@@ -74,7 +74,7 @@
 // Try ONE option at a time to find the correct colour order for your display
 
 //  #define TFT_RGB_ORDER TFT_RGB  // Colour order Red-Green-Blue
-//  #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
+  #define TFT_RGB_ORDER TFT_BGR  // Colour order Blue-Green-Red
 
 // For M5Stack ESP32 module with integrated ILI9341 display ONLY, remove // in line below
 
@@ -223,9 +223,9 @@
 //#define TFT_MISO 16
 #define TFT_MOSI 19
 #define TFT_SCLK 18
-#define TFT_CS   17  // Chip select control pin
-#define TFT_DC   20  // Data Command control pin
-#define TFT_RST  21  // Reset pin (could connect to RST pin)
+#define TFT_CS   5  // Chip select control pin
+#define TFT_DC   21  // Data Command control pin
+#define TFT_RST  22  // Reset pin (could connect to RST pin)
 //#define TFT_BL   27  // LED back-light
 
 //#define TOUCH_CS 21     // Chip select pin (T_CS) of touch scre0en

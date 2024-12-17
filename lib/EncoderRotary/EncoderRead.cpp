@@ -8,7 +8,6 @@
 */
 
 #include "EncoderRead.h"
-
 // Khởi tạo con trỏ tĩnh
 EncoderRead* EncoderRead::instance = nullptr;
 EncoderRead::EncoderRead(uint8_t pinA, uint8_t pinB, uint8_t btnPin)
@@ -16,14 +15,11 @@ EncoderRead::EncoderRead(uint8_t pinA, uint8_t pinB, uint8_t btnPin)
     _lastIncReadTime(0), _lastDecReadTime(0), _pauseLength(500), _fastIncrement(10) {
     instance = this;
 }
-unsigned long lastDebounceTime = 0;
-unsigned long debounceDelay = 10;  // Thời gian debounce (ms)
-
 
 void EncoderRead::begin() {
-    pinMode(_pinA, INPUT_PULLUP);
-    pinMode(_pinB, INPUT_PULLUP);
-    pinMode(_btnPin, INPUT_PULLUP);
+    pinMode(_pinA, INPUT);
+    pinMode(_pinB, INPUT);
+    pinMode(_btnPin, INPUT);
     
     attachInterrupt(digitalPinToInterrupt(_pinA), EncoderRead::readEncoder, CHANGE);
     attachInterrupt(digitalPinToInterrupt(_pinB), EncoderRead::readEncoder, CHANGE);
@@ -31,37 +27,63 @@ void EncoderRead::begin() {
 
 void EncoderRead::readEncoder() {
     if (instance) {
-        static uint8_t old_AB = 3;
-        static int8_t encval = 0; 
-        static const int8_t enc_states[]  = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0}; 
+        static uint32_t lastDebounceTime = 0;
+        uint32_t currentTime = micros();
+        
+        if (currentTime - lastDebounceTime > 200) { // 200 µs debounce
+            static uint8_t old_AB = 3;
+            static int8_t encval = 0; 
+            static const int8_t enc_states[]  = {0,-1,1,0,1,0,0,-1,-1,0,0,1,0,1,-1,0}; 
 
-        old_AB <<= 2;
-        if (digitalRead(instance->_pinA)) old_AB |= 0x02; 
-        if (digitalRead(instance->_pinB)) old_AB |= 0x01;
+            old_AB <<= 2;
+            if (digitalRead(instance->_pinA)) old_AB |= 0x02; 
+            if (digitalRead(instance->_pinB)) old_AB |= 0x01; 
 
+            encval += enc_states[(old_AB & 0x0F)]; 
 
-        encval += enc_states[(old_AB & 0x0F)]; 
-
-        if (encval > 3) { 
-            int changevalue = 1;
-            if ((micros() - instance->_lastIncReadTime) < instance->_pauseLength) {
-                changevalue = instance->_fastIncrement * changevalue; 
+            if (encval > 3) { 
+                int changevalue = 1;
+                if ((micros() - instance->_lastIncReadTime) < instance->_pauseLength) {
+                    changevalue = instance->_fastIncrement * changevalue; 
+                }
+                instance->_lastIncReadTime = micros();
+                instance->_counter += changevalue; 
+                encval = 0;
             }
-            instance->_lastIncReadTime = micros();
-            instance->_counter += changevalue; 
-            encval = 0;
-        }
-        else if (encval < -3) { 
-            int changevalue = -1;
-            if ((micros() - instance->_lastDecReadTime) < instance->_pauseLength) {
-                changevalue = instance->_fastIncrement * changevalue; 
+            else if (encval < -3) { 
+                int changevalue = -1;
+                if ((micros() - instance->_lastDecReadTime) < instance->_pauseLength) {
+                    changevalue = instance->_fastIncrement * changevalue; 
+                }
+                instance->_lastDecReadTime = micros();
+                instance->_counter += changevalue; 
+                encval = 0;
             }
-            instance->_lastDecReadTime = micros();
-            instance->_counter += changevalue; 
-            encval = 0;
+            lastDebounceTime = currentTime;
         }
     }
 }
+
+bool EncoderRead::encBtn() {
+    static uint32_t lastPressTime = 0;
+    static uint32_t lastDebounceTime = 0;
+    static bool lastState = false;
+    uint32_t currentTime = millis();
+
+    bool currentState = digitalRead(_btnPin) == HIGH;
+    if (currentState != lastState) {
+        if (currentTime - lastPressTime > 50) { // 50 ms debounce
+            lastPressTime = currentTime;
+            lastState = currentState;
+            return currentState;
+            
+        }
+    }
+
+
+    return false;
+}
+
 
 int EncoderRead::getCounter() {
     return _counter;
@@ -69,15 +91,4 @@ int EncoderRead::getCounter() {
 void EncoderRead::resetCounter() {
     _counter = 0;
 }
-bool EncoderRead::encBtn() {
-    //return digitalRead(_btnPin) == LOW; 
-     bool currentState = digitalRead(_btnPin);
-  if (currentState == LOW) {
-    if ((millis() - lastDebounceTime) > debounceDelay) {
-      lastDebounceTime = millis();
-      return true; 
-    }
-  }
-  return false;
 
-}

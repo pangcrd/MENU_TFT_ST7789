@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+
 class EncoderRead {
   public:
     EncoderRead(uint8_t pinA, uint8_t pinB, uint8_t btnPin);
@@ -16,9 +17,9 @@ class EncoderRead {
     uint8_t _pinA, _pinB, _btnPin;    
     volatile int _counter;                   
     unsigned long _lastIncReadTime;          
-    unsigned long _lastDecReadTime;          
+    unsigned long _lastDecReadTime;     
     int _pauseLength;                        
-    int _fastIncrement;                    
+    int _fastIncrement;                 
 
     static EncoderRead* instance; 
     static const int8_t _encStates[16];
